@@ -53,6 +53,7 @@ jobs:
 
   deploy-checkmein-group-sync:
     runs-on: ubuntu-latest
+    needs: deploy-membership-sync
     steps:
       - uses: actions/checkout@v4
 
