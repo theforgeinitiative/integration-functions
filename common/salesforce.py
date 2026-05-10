@@ -40,6 +40,19 @@ class SalesforceClient:
         data = resp.json()
         return Salesforce(instance_url=data["instance_url"], session_id=data["access_token"])
 
+    def get_campaign_members(self, campaign_id: str) -> dict[str, str]:
+        """Returns {contact_id: campaign_member_id} for all members of the campaign."""
+        result = self._sf.query_all(
+            f"SELECT Id, ContactId FROM CampaignMember WHERE CampaignId = '{campaign_id}'"
+        )
+        return {r["ContactId"]: r["Id"] for r in result["records"]}
+
+    def add_campaign_member(self, campaign_id: str, contact_id: str) -> None:
+        self._sf.CampaignMember.create({"CampaignId": campaign_id, "ContactId": contact_id})
+
+    def remove_campaign_member(self, campaign_member_id: str) -> None:
+        self._sf.CampaignMember.delete(campaign_member_id)
+
     def get_current_members(self) -> list[dict]:
         result = self._sf.query_all(_MEMBER_QUERY)
         contacts = []

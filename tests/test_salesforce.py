@@ -89,6 +89,34 @@ def test_get_current_members_null_account(client_and_sf):
     assert members[0]["membership_status"] == ""
 
 
+def test_get_campaign_members(client_and_sf):
+    client, mock_sf = client_and_sf
+    mock_sf.query_all.return_value = {
+        "records": [
+            {"ContactId": "003AAA", "Id": "00vAAA"},
+            {"ContactId": "003BBB", "Id": "00vBBB"},
+        ]
+    }
+
+    members = client.get_campaign_members("701CAMPAIGN")
+
+    assert members == {"003AAA": "00vAAA", "003BBB": "00vBBB"}
+
+
+def test_add_campaign_member(client_and_sf):
+    client, mock_sf = client_and_sf
+    client.add_campaign_member("701CAMPAIGN", "003CONTACT")
+    mock_sf.CampaignMember.create.assert_called_once_with(
+        {"CampaignId": "701CAMPAIGN", "ContactId": "003CONTACT"}
+    )
+
+
+def test_remove_campaign_member(client_and_sf):
+    client, mock_sf = client_and_sf
+    client.remove_campaign_member("00vMEMBER")
+    mock_sf.CampaignMember.delete.assert_called_once_with("00vMEMBER")
+
+
 def test_get_current_members_returns_all_records(client_and_sf):
     client, mock_sf = client_and_sf
     mock_sf.query_all.return_value = {

@@ -51,3 +51,40 @@ jobs:
           DISCORD_GUILD_TFI_ID=discord-guild-tfi-id:latest,\
           DISCORD_GUILD_TFI_MEMBER_ROLE_ID=discord-guild-tfi-member-role-id:latest\
           "
+
+  deploy-checkmein-group-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Bundle shared code into function directory
+        run: cp -r common functions/checkmein_group_sync/
+
+      - name: Deploy checkmein-group-sync
+        run: |
+          gcloud functions deploy checkmein-group-sync \
+            --gen2 \
+            --runtime python311 \
+            --region us-central1 \
+            --source functions/checkmein_group_sync \
+            --entry-point checkmein_group_sync \
+            --trigger-topic checkmein-group-sync \
+            --timeout 540s \
+            --memory 512MB \
+            --service-account "membership-sync-runner@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com" \
+            --project "${{ secrets.GCP_PROJECT_ID }}" \
+            --set-secrets "\
+          SFDC_URL=sfdc-url:latest,\
+          SFDC_CLIENT_ID=sfdc-client-id:latest,\
+          SFDC_CLIENT_SECRET=sfdc-client-secret:latest,\
+          DISCORD_BOT_TOKEN=discord-bot-token:latest,\
+          DISCORD_GUILD_TFI_ID=discord-guild-tfi-id:latest,\
+          CHECKMEIN_ROLE_CONFIGS=checkmein-role-configs:latest\
+          "

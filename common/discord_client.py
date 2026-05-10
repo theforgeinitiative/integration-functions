@@ -53,13 +53,13 @@ async def _sync_guild_roles(
 
             if user_id in sfdc_discord_ids and not has_role:
                 if dry_run:
-                    print(f"Discord: would add Current Member role to {name}")
+                    print(f"Discord: would add role to {name}")
                 else:
                     try:
                         await member.add_roles(
                             discord.Object(id=role_id), reason="membership-sync"
                         )
-                        print(f"Discord: added Current Member role to {name}")
+                        print(f"Discord: added role to {name}")
                     except discord.HTTPException as e:
                         print(f"ERROR Discord: failed to add role to {name}: {e}")
                         errors.append(name)
@@ -68,13 +68,13 @@ async def _sync_guild_roles(
 
             elif has_role and user_id not in sfdc_discord_ids:
                 if dry_run:
-                    print(f"Discord: would remove Current Member role from {name}")
+                    print(f"Discord: would remove role from {name}")
                 else:
                     try:
                         await member.remove_roles(
                             discord.Object(id=role_id), reason="membership-sync"
                         )
-                        print(f"Discord: removed Current Member role from {name}")
+                        print(f"Discord: removed role from {name}")
                     except discord.HTTPException as e:
                         print(f"ERROR Discord: failed to remove role from {name}: {e}")
                         errors.append(name)

@@ -1,0 +1,7 @@
+functions-framework>=3.0,<4
+simple-salesforce>=1.12,<2
+google-api-python-client>=2.0,<3
+google-auth>=2.0,<3
+google-cloud-bigquery>=3.0,<4
+discord.py>=2.0,<3
+requests>=2.0,<3

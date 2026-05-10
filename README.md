@@ -48,6 +48,8 @@ black --check .
 
 # One-time setup
 ln -sfn ../../common functions/membership_sync/common
+ln -sfn ../../common functions/checkmein_group_sync/common
+
 cp .env.example .env  # fill in any missing values
 
 # Authenticate ADC with the Workspace scope (requires your account to be a Workspace admin)
@@ -56,6 +58,7 @@ gcloud auth application-default login \
 
 # Run
 python functions/membership_sync/main.py --dry-run
+python functions/checkmein_group_sync/main.py --dry-run
 ```
 
 ## GCP setup
