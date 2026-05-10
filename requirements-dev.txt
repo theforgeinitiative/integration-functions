@@ -2,3 +2,4 @@ pytest
 pytest-mock
 black
 python-dotenv
+google-cloud-bigquery>=3.0,<4
