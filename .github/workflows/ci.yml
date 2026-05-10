@@ -13,8 +13,11 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install dev dependencies
-        run: pip install -r requirements-dev.txt
+      - name: Install dependencies
+        run: |
+          pip install -r requirements-dev.txt \
+            -r functions/membership_sync/requirements.txt \
+            -r functions/checkmein_group_sync/requirements.txt
 
       - name: Check formatting
         run: black --check .

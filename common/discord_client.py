@@ -56,9 +56,7 @@ async def _sync_guild_roles(
                     print(f"Discord: would add role to {name}")
                 else:
                     try:
-                        await member.add_roles(
-                            discord.Object(id=role_id), reason="membership-sync"
-                        )
+                        await member.add_roles(discord.Object(id=role_id), reason="membership-sync")
                         print(f"Discord: added role to {name}")
                     except discord.HTTPException as e:
                         print(f"ERROR Discord: failed to add role to {name}: {e}")
