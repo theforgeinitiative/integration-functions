@@ -43,8 +43,7 @@ jobs:
           SFDC_CLIENT_ID=sfdc-client-id:latest,\
           SFDC_CLIENT_SECRET=sfdc-client-secret:latest,\
           CHECKMEIN_URL=checkmein-url:latest,\
-          CHECKMEIN_USERNAME=checkmein-username:latest,\
-          CHECKMEIN_PASSWORD=checkmein-password:latest,\
+          CHECKMEIN_TOKEN=checkmein-token:latest,\
           DISCORD_BOT_TOKEN=discord-bot-token:latest,\
           GROUPS_MEMBERS_EMAIL=groups-members-email:latest,\
           GROUPS_EXCEPTIONS=groups-exceptions:latest,\

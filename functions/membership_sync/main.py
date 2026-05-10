@@ -33,8 +33,7 @@ def run(dry_run: bool = False) -> None:
         if not dry_run:
             checkmein = CheckMeInClient(
                 url=os.environ["CHECKMEIN_URL"],
-                username=os.environ["CHECKMEIN_USERNAME"],
-                password=os.environ["CHECKMEIN_PASSWORD"],
+                token=os.environ["CHECKMEIN_TOKEN"],
             )
             checkmein.bulk_add(contacts)
             print(f"CheckMeIn: uploaded {len(contacts)} members")

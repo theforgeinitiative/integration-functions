@@ -1,7 +1,6 @@
 import csv
 import io
 from datetime import datetime
-from urllib.parse import urlencode
 
 import requests
 
@@ -17,23 +16,11 @@ _CSV_FIELDS = [
 
 
 class CheckMeInClient:
-    def __init__(self, url: str, username: str, password: str):
+    def __init__(self, url: str, token: str):
         self._url = url.rstrip("/")
-        self._username = username
-        self._password = password
-        self._session = requests.Session()
-        self._authenticated = False
-
-    def _authenticate(self) -> None:
-        params = urlencode({"username": self._username, "password": self._password})
-        resp = self._session.get(f"{self._url}/profile/loginAttempt?{params}")
-        resp.raise_for_status()
-        self._authenticated = True
+        self._token = token
 
     def bulk_add(self, contacts: list[dict]) -> None:
-        if not self._authenticated:
-            self._authenticate()
-
         buf = io.StringIO()
         writer = csv.DictWriter(buf, fieldnames=_CSV_FIELDS)
         writer.writeheader()
@@ -63,8 +50,9 @@ class CheckMeInClient:
             )
 
         csv_bytes = buf.getvalue().encode("utf-8")
-        resp = self._session.post(
-            f"{self._url}/admin/bulkAddMembers",
+        resp = requests.post(
+            f"{self._url}/sync/members",
+            headers={"Authorization": f"Bearer {self._token}"},
             files={"csvfile": ("report.csv", csv_bytes, "text/csv")},
         )
         resp.raise_for_status()
