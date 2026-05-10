@@ -12,7 +12,15 @@ Runs nightly. Queries Salesforce for current members and syncs that list to:
 - **Google Groups** — adds/removes members from `members@theforgeinitiative.org`
 - **Discord** — assigns/removes the Current Member role in configured guilds
 
-Triggered by Cloud Scheduler over HTTP. The function returns a JSON summary and uses HTTP 207 if any step partially failed.
+Triggered by Cloud Scheduler (nightly at 06:00 UTC) via the `membership-sync` Pub/Sub topic.
+
+### `checkmein-group-sync`
+
+Runs hourly. Reads role assignments from `tfi-data.checkmein.roles` (via BigQuery) and reconciles each role to its corresponding Google Group, Discord role, and Salesforce campaign. Role-to-group mappings are stored in the `checkmein-role-configs` Secret Manager secret as a JSON array.
+
+Currently synced roles: keyholder, shop steward, shop certifier. Mappings (Google Group, Discord role ID, Salesforce campaign ID) are configured in the `checkmein-role-configs` secret.
+
+Triggered by Cloud Scheduler (hourly) via the `checkmein-group-sync` Pub/Sub topic.
 
 ## Repository structure
 
@@ -22,8 +30,12 @@ common/                  # Shared API clients (copied into each function at depl
   checkmein.py           # CheckMeIn CSV uploader
   google_groups.py       # Google Admin Directory API
   discord_client.py      # Discord role management via discord.py
+  bigquery_client.py     # BigQuery client for CheckMeIn role data
 functions/
   membership_sync/
+    main.py              # Cloud Function entry point
+    requirements.txt
+  checkmein_group_sync/
     main.py              # Cloud Function entry point
     requirements.txt
 tests/
@@ -38,7 +50,9 @@ The `common/` package is copied into the function's source directory at deploy t
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
-pip install -r requirements-dev.txt -r functions/membership_sync/requirements.txt
+pip install -r requirements-dev.txt \
+  -r functions/membership_sync/requirements.txt \
+  -r functions/checkmein_group_sync/requirements.txt
 
 # Run tests
 pytest
@@ -84,6 +98,7 @@ All runtime configuration — sensitive or not — lives here so values can be u
 | `discord-guild-tfi-member-role-id` | ID of the Current Member role in the TFI guild |
 | `groups-members-email` | Members Google Group address (e.g. `members@theforgeinitiative.org`) |
 | `groups-exceptions` | Comma-separated emails always kept in the group regardless of membership |
+| `checkmein-role-configs` | JSON array of role→group/discord/campaign mappings for `checkmein-group-sync` |
 
 ### 2. Google Groups — Domain-Wide Delegation
 
@@ -96,36 +111,43 @@ In the Google Workspace Admin Console, configure Domain-Wide Delegation for the 
 3. Invite the bot to each guild with `Manage Roles` permission
 4. Ensure the bot's role is positioned above the Current Member role in each guild's role hierarchy
 
-### 4. Pub/Sub topic
+### 4. Pub/Sub topics and Cloud Scheduler
 
-The function is triggered by a Pub/Sub message, so all callers (Cloud Scheduler, Make.com, manual) publish to the same topic rather than hitting an HTTP endpoint.
+Each function is triggered by publishing a message to its Pub/Sub topic. The message body is `{}` for a normal run.
 
 ```bash
 gcloud pubsub topics create membership-sync --project PROJECT
+gcloud pubsub topics create checkmein-group-sync --project PROJECT
 ```
 
-The message body is optional JSON. Omit it (or send `{}`) for a normal run; send `{"dry_run": true}` to log what would change without making any modifications.
-
-**Cloud Scheduler (nightly):**
+**Cloud Scheduler:**
 ```bash
+# membership-sync — nightly at 06:00 UTC
 gcloud scheduler jobs create pubsub membership-sync-nightly \
   --location us-central1 \
   --schedule "0 6 * * *" \
   --time-zone "UTC" \
   --topic projects/PROJECT/topics/membership-sync \
   --message-body '{}'
+
+# checkmein-group-sync — hourly
+gcloud scheduler jobs create pubsub checkmein-group-sync \
+  --location us-central1 \
+  --schedule "0 * * * *" \
+  --time-zone "UTC" \
+  --topic projects/PROJECT/topics/checkmein-group-sync \
+  --message-body '{}'
 ```
 
 To trigger manually:
 ```bash
-gcloud scheduler jobs run membership-sync-nightly --location us-central1
-# or publish directly:
-gcloud pubsub topics publish membership-sync --message '{"dry_run": true}'
+gcloud pubsub topics publish membership-sync --message '{}'
+gcloud pubsub topics publish checkmein-group-sync --message '{}'
 ```
 
 **Make.com:**
 
-Use the **Google Cloud Pub/Sub → Publish a Message** module. Connect it with a GCP service account that has `roles/pubsub.publisher` on the `membership-sync` topic. Set the message body to `{}` (or `{"dry_run": true}` for a test run).
+Use the **Google Cloud Pub/Sub → Publish a Message** module. Connect it with a GCP service account that has `roles/pubsub.publisher` on the relevant topic.
 
 ### 5. GitHub Actions — Workload Identity Federation
 
