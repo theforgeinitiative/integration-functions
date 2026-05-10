@@ -26,8 +26,9 @@ def _make_member(user_id: str, role_ids: list[int] = None, name: str = "TestUser
 
 @pytest.fixture
 def mock_discord():
-    with patch("common.discord_client.discord.Client") as mock_client_cls, patch(
-        "common.discord_client.discord.Intents"
+    with (
+        patch("common.discord_client.discord.Client") as mock_client_cls,
+        patch("common.discord_client.discord.Intents"),
     ):
         mock_client = MagicMock()
         mock_client_cls.return_value = mock_client

@@ -7,9 +7,10 @@ from common.google_groups import GoogleGroupsClient
 
 @pytest.fixture
 def client_and_svc():
-    with patch("common.google_groups.google.auth.default") as mock_auth, patch(
-        "common.google_groups.build"
-    ) as mock_build:
+    with (
+        patch("common.google_groups.google.auth.default") as mock_auth,
+        patch("common.google_groups.build") as mock_build,
+    ):
         mock_auth.return_value = (MagicMock(), None)
         mock_svc = MagicMock()
         mock_build.return_value = mock_svc

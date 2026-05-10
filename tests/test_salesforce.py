@@ -25,9 +25,10 @@ def _make_record(**overrides):
 
 @pytest.fixture
 def client_and_sf():
-    with patch("common.salesforce.requests.post") as mock_post, patch(
-        "common.salesforce.Salesforce"
-    ) as mock_sf_cls:
+    with (
+        patch("common.salesforce.requests.post") as mock_post,
+        patch("common.salesforce.Salesforce") as mock_sf_cls,
+    ):
         mock_post.return_value.raise_for_status = MagicMock()
         mock_post.return_value.json.return_value = {
             "access_token": "token123",

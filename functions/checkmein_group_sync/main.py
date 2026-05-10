@@ -27,9 +27,7 @@ def run(dry_run: bool = False) -> None:
     if dry_run:
         print("Running in dry-run mode — no changes will be made")
 
-    role_configs = [
-        RoleConfig(**r) for r in json.loads(os.environ["CHECKMEIN_ROLE_CONFIGS"])
-    ]
+    role_configs = [RoleConfig(**r) for r in json.loads(os.environ["CHECKMEIN_ROLE_CONFIGS"])]
 
     # --- BigQuery ---
     bq = BigQueryClient()
@@ -58,7 +56,9 @@ def run(dry_run: bool = False) -> None:
             target_emails: dict[str, str] = {}
             for m in role_members:
                 if m["google_group_email"]:
-                    target_emails[_normalize_email(m["google_group_email"])] = m["google_group_email"]
+                    target_emails[_normalize_email(m["google_group_email"])] = m[
+                        "google_group_email"
+                    ]
 
             add, delete = [], []
             for key, email in target_emails.items():

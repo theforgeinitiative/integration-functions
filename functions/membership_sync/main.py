@@ -10,6 +10,7 @@ from common.discord_client import GuildConfig, sync_guild_roles
 from common.google_groups import GoogleGroupsClient
 from common.salesforce import SalesforceClient
 
+
 def _normalize_email(email: str) -> str:
     """Gmail ignores dots and is case-insensitive, so normalize before comparing."""
     return email.lower().replace(".", "")
@@ -47,9 +48,7 @@ def run(dry_run: bool = False) -> None:
         current_members = groups_client.list_members(group_email)
 
         exceptions = [
-            e.strip()
-            for e in os.environ.get("GROUPS_EXCEPTIONS", "").split(",")
-            if e.strip()
+            e.strip() for e in os.environ.get("GROUPS_EXCEPTIONS", "").split(",") if e.strip()
         ]
 
         sfdc_emails: dict[str, str] = {}
@@ -105,9 +104,7 @@ def run(dry_run: bool = False) -> None:
     pyrotech_id = os.environ.get("DISCORD_GUILD_PYROTECH_ID")
     pyrotech_role = os.environ.get("DISCORD_GUILD_PYROTECH_MEMBER_ROLE_ID")
     if pyrotech_id and pyrotech_role:
-        guild_configs["pyrotech"] = GuildConfig(
-            guild_id=pyrotech_id, member_role_id=pyrotech_role
-        )
+        guild_configs["pyrotech"] = GuildConfig(guild_id=pyrotech_id, member_role_id=pyrotech_role)
 
     sfdc_discord_ids = {c["discord_id"] for c in contacts if c["discord_id"]}
 
