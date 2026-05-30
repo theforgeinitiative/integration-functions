@@ -16,9 +16,30 @@ Triggered by Cloud Scheduler (nightly at 06:00 UTC) via the `membership-sync` Pu
 
 ### `checkmein-group-sync`
 
-Runs hourly. Reads role assignments from `tfi-data.checkmein.roles` (via BigQuery) and reconciles each role to its corresponding Google Group, Discord role, and Salesforce campaign. Role-to-group mappings are stored in the `checkmein-role-configs` Secret Manager secret as a JSON array.
+Runs hourly. Reads role assignments from `tfi-data.checkmein.roles` (via BigQuery) and reconciles each role to its corresponding Google Group, Discord role, and Salesforce campaign.
 
-Currently synced roles: keyholder, shop steward, shop certifier. Mappings (Google Group, Discord role ID, Salesforce campaign ID) are configured in the `checkmein-role-configs` secret.
+#### Synced roles
+
+| CheckMeIn field | Google Group | Discord role | Salesforce campaign |
+|---|---|---|---|
+| `keyholder` | ✓ | ✓ | ✓ |
+| `steward` | ✓ | ✓ | ✓ |
+| `certifier` | ✓ | ✓ | ✓ |
+
+The `coach` field exists in BigQuery but is not currently synced.
+
+Actual group emails, Discord role IDs, and campaign IDs are stored in the `checkmein-role-configs` Secret Manager secret as a JSON array — not in this repo. To add or update a role mapping, edit that secret directly. Schema:
+
+```json
+[
+  {
+    "field": "keyholder",
+    "group_email": "keyholders@theforgeinitiative.org",
+    "discord_role_id": "123456789012345678",
+    "campaign_id": "701Hs00000XXXXXXIAQ"
+  }
+]
+```
 
 Triggered by Cloud Scheduler (hourly) via the `checkmein-group-sync` Pub/Sub topic.
 
