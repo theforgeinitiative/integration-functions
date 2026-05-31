@@ -145,9 +145,11 @@ def run(dry_run: bool = False) -> None:
             print(f"ERROR Salesforce campaign sync failed for {config.field}: {e}")
 
 
-@functions_framework.cloud_event
-def checkmein_group_sync(cloud_event):
-    run(dry_run=False)
+@functions_framework.http
+def checkmein_group_sync(request):
+    dry_run = request.args.get("dry_run", "").lower() == "true"
+    run(dry_run=dry_run)
+    return ("OK", 200)
 
 
 if __name__ == "__main__":

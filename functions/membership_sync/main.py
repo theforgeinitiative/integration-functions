@@ -123,9 +123,11 @@ def run(dry_run: bool = False) -> None:
             print(f"ERROR Discord sync failed for {guild_name}: {e}")
 
 
-@functions_framework.cloud_event
-def membership_sync(cloud_event):
-    run(dry_run=False)
+@functions_framework.http
+def membership_sync(request):
+    dry_run = request.args.get("dry_run", "").lower() == "true"
+    run(dry_run=dry_run)
+    return ("OK", 200)
 
 
 if __name__ == "__main__":
