@@ -33,7 +33,8 @@ jobs:
             --region us-central1 \
             --source functions/membership_sync \
             --entry-point membership_sync \
-            --trigger-topic membership-sync \
+            --trigger-http \
+            --allow-unauthenticated \
             --timeout 540s \
             --memory 512MB \
             --service-account "membership-sync-runner@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com" \
@@ -75,7 +76,8 @@ jobs:
             --region us-central1 \
             --source functions/checkmein_group_sync \
             --entry-point checkmein_group_sync \
-            --trigger-topic checkmein-group-sync \
+            --trigger-http \
+            --allow-unauthenticated \
             --timeout 540s \
             --memory 512MB \
             --service-account "membership-sync-runner@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com" \
