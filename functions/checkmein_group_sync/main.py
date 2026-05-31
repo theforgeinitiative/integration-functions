@@ -23,7 +23,7 @@ class RoleConfig:
     campaign_id: str
 
 
-def run(dry_run: bool = False) -> None:
+def run(dry_run: bool = False) -> dict:
     if dry_run:
         print("Running in dry-run mode — no changes will be made")
 
@@ -46,9 +46,12 @@ def run(dry_run: bool = False) -> None:
     discord_token = os.environ["DISCORD_BOT_TOKEN"]
     guild_id = os.environ["DISCORD_GUILD_TFI_ID"]
 
+    result: dict = {"bigquery": {"records": len(all_members)}, "roles": {}}
+
     for config in role_configs:
         role_members = [m for m in all_members if m[config.field]]
         print(f"{config.field}: {len(role_members)} members in CheckMeIn")
+        role_result: dict = {}
 
         # --- Google Groups ---
         try:
@@ -88,9 +91,11 @@ def run(dry_run: bool = False) -> None:
                     delete.append(email)
 
             print(f"Groups {config.field}: +{len(add)} -{len(delete)}")
+            role_result["groups"] = {"added": len(add), "removed": len(delete)}
 
         except Exception as e:
             print(f"ERROR Google Groups sync failed for {config.field}: {e}")
+            role_result["groups"] = {"error": str(e)}
 
         # --- Discord ---
         try:
@@ -101,8 +106,14 @@ def run(dry_run: bool = False) -> None:
                 f"Discord {config.field}: +{len(changes['additions'])}"
                 f" -{len(changes['deletions'])} errors={len(changes['errors'])}"
             )
+            role_result["discord"] = {
+                "added": len(changes["additions"]),
+                "removed": len(changes["deletions"]),
+                "errors": len(changes["errors"]),
+            }
         except Exception as e:
             print(f"ERROR Discord sync failed for {config.field}: {e}")
+            role_result["discord"] = {"error": str(e)}
 
         # --- Salesforce Campaign ---
         try:
@@ -140,16 +151,21 @@ def run(dry_run: bool = False) -> None:
                         )
 
             print(f"Salesforce {config.field}: +{len(add_ids)} -{len(remove_ids)}")
+            role_result["salesforce"] = {"added": len(add_ids), "removed": len(remove_ids)}
 
         except Exception as e:
             print(f"ERROR Salesforce campaign sync failed for {config.field}: {e}")
+            role_result["salesforce"] = {"error": str(e)}
+
+        result["roles"][config.field] = role_result
+
+    return result
 
 
 @functions_framework.http
 def checkmein_group_sync(request):
     dry_run = request.args.get("dry_run", "").lower() == "true"
-    run(dry_run=dry_run)
-    return ("OK", 200)
+    return run(dry_run=dry_run)
 
 
 if __name__ == "__main__":
@@ -159,4 +175,4 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
-    run(dry_run=args.dry_run)
+    print(json.dumps(run(dry_run=args.dry_run), indent=2))
