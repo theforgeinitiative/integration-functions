@@ -1,5 +1,4 @@
 import argparse
-import base64
 import json
 import os
 
@@ -16,9 +15,11 @@ def _normalize_email(email: str) -> str:
     return email.lower().replace(".", "")
 
 
-def run(dry_run: bool = False) -> None:
+def run(dry_run: bool = False) -> dict:
     if dry_run:
         print("Running in dry-run mode — no changes will be made")
+
+    result = {}
 
     # --- Salesforce ---
     sf = SalesforceClient(
@@ -28,6 +29,7 @@ def run(dry_run: bool = False) -> None:
     )
     contacts = sf.get_current_members()
     print(f"Salesforce: found {len(contacts)} current members")
+    result["salesforce"] = {"members": len(contacts)}
 
     # --- CheckMeIn ---
     try:
@@ -38,8 +40,10 @@ def run(dry_run: bool = False) -> None:
             )
             checkmein.bulk_add(contacts)
             print(f"CheckMeIn: uploaded {len(contacts)} members")
+        result["checkmein"] = {"uploaded": len(contacts) if not dry_run else 0}
     except Exception as e:
         print(f"ERROR CheckMeIn bulk_add failed: {e}")
+        result["checkmein"] = {"error": str(e)}
 
     # --- Google Groups ---
     group_email = os.environ["GROUPS_MEMBERS_EMAIL"]
@@ -89,9 +93,11 @@ def run(dry_run: bool = False) -> None:
                 delete.append(email)
 
         print(f"Groups: +{len(add)} -{len(delete)}")
+        result["groups"] = {"added": len(add), "removed": len(delete)}
 
     except Exception as e:
         print(f"ERROR Google Groups sync failed: {e}")
+        result["groups"] = {"error": str(e)}
 
     # --- Discord ---
     discord_token = os.environ["DISCORD_BOT_TOKEN"]
@@ -107,6 +113,7 @@ def run(dry_run: bool = False) -> None:
         guild_configs["pyrotech"] = GuildConfig(guild_id=pyrotech_id, member_role_id=pyrotech_role)
 
     sfdc_discord_ids = {c["discord_id"] for c in contacts if c["discord_id"]}
+    result["discord"] = {}
 
     for guild_name, config in guild_configs.items():
         try:
@@ -115,15 +122,22 @@ def run(dry_run: bool = False) -> None:
                 f"Discord {guild_name}: +{len(changes['additions'])}"
                 f" -{len(changes['deletions'])} errors={len(changes['errors'])}"
             )
+            result["discord"][guild_name] = {
+                "added": len(changes["additions"]),
+                "removed": len(changes["deletions"]),
+                "errors": len(changes["errors"]),
+            }
         except Exception as e:
             print(f"ERROR Discord sync failed for {guild_name}: {e}")
+            result["discord"][guild_name] = {"error": str(e)}
+
+    return result
 
 
 @functions_framework.http
 def membership_sync(request):
     dry_run = request.args.get("dry_run", "").lower() == "true"
-    run(dry_run=dry_run)
-    return ("OK", 200)
+    return run(dry_run=dry_run)
 
 
 if __name__ == "__main__":
@@ -133,4 +147,4 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
-    run(dry_run=args.dry_run)
+    print(json.dumps(run(dry_run=args.dry_run), indent=2))
