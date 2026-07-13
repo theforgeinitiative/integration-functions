@@ -13,7 +13,8 @@ SELECT
     Google_group__c,
     Google_group_email_2ndary__c,
     Discord_ID__c,
-    Account.npsp__Membership_Status__c
+    Account.npsp__Membership_Status__c,
+    Account.npo02__MembershipEndDate__c
 FROM Contact
 WHERE Account.npsp__Membership_Status__c IN ('Current', 'Grace Period')
 AND (NOT Name LIKE '%test%')
@@ -65,7 +66,11 @@ class SalesforceClient:
                     "display_name": record.get("TFI_Display_Name_for_Button__c", "") or "",
                     "first_name": record.get("FirstName", "") or "",
                     "last_name": record.get("LastName", "") or "",
-                    "membership_end_date": record.get("npo02__MembershipEndDate__c", "") or "",
+                    "membership_end_date": (
+                        record.get("npo02__MembershipEndDate__c")
+                        or account.get("npo02__MembershipEndDate__c")
+                        or ""
+                    ),
                     "email": record.get("Email", "") or "",
                     "group_email": record.get("Google_group__c", "") or "",
                     "group_email_alt": record.get("Google_group_email_2ndary__c", "") or "",

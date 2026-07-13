@@ -83,11 +83,52 @@ def test_get_current_members_none_fields_become_empty_strings(client_and_sf):
 
 def test_get_current_members_null_account(client_and_sf):
     client, mock_sf = client_and_sf
-    mock_sf.query_all.return_value = {"records": [_make_record(Account=None)]}
+    mock_sf.query_all.return_value = {
+        "records": [_make_record(Account=None, npo02__MembershipEndDate__c=None)]
+    }
 
     members = client.get_current_members()
 
     assert members[0]["membership_status"] == ""
+    assert members[0]["membership_end_date"] == ""
+
+
+def test_get_current_members_falls_back_to_account_membership_end_date(client_and_sf):
+    client, mock_sf = client_and_sf
+    mock_sf.query_all.return_value = {
+        "records": [
+            _make_record(
+                npo02__MembershipEndDate__c=None,
+                Account={
+                    "npsp__Membership_Status__c": "Current",
+                    "npo02__MembershipEndDate__c": "2026-06-30",
+                },
+            )
+        ]
+    }
+
+    members = client.get_current_members()
+
+    assert members[0]["membership_end_date"] == "2026-06-30"
+
+
+def test_get_current_members_prefers_contact_membership_end_date(client_and_sf):
+    client, mock_sf = client_and_sf
+    mock_sf.query_all.return_value = {
+        "records": [
+            _make_record(
+                npo02__MembershipEndDate__c="2025-12-31",
+                Account={
+                    "npsp__Membership_Status__c": "Current",
+                    "npo02__MembershipEndDate__c": "2026-06-30",
+                },
+            )
+        ]
+    }
+
+    members = client.get_current_members()
+
+    assert members[0]["membership_end_date"] == "2025-12-31"
 
 
 def test_get_campaign_members(client_and_sf):
